@@ -41,5 +41,16 @@ namespace
 			}
 			return ret;
 		};
+
+		// Two BCD digits pack into one byte; an odd digit count rounds up.
+		int BytesForUnits(int units) override
+		{
+			return (units + 1) / 2;
+		};
+
+		int UnitsForBytes(int bytes) override
+		{
+			return bytes * 2;
+		};
 	};
 }

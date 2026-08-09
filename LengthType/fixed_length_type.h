@@ -1,36 +1,46 @@
 #pragma once
 #include "i_length_type.h"
-#include <math.h>
 #include <memory>
-namespace 
+namespace
 {
 	using namespace std;
 
 	class FixedLengthType : public ILengthType
 	{
-	public: 
-		FixedLengthType(int len_indicator, string format) : len_indicator_(len_indicator), format_(format)
+	public:
+		FixedLengthType(int max_length) : max_length_(max_length)
 		{
 			;
 		}
-		int LengthOfLengthIndicator() override
+
+		int MaxLength() override
 		{
-			return len_indicator_;
+			return max_length_;
 		};
 
-		string Description() override
+		// The wire carries no length for a fixed field.
+		int LengthOfLengthPrefix() override
 		{
-			return format_;
+			return 0;
+		};
+
+		vector<uint8_t> EncodeLengthPrefix(int) override
+		{
+			return {};
 		};
 
 		int GetLengthOfField(vector<uint8_t> msg, int offset) override
 		{
-			return len_indicator_;
+			return max_length_;
+		};
+
+		void JustifyValue(vector<uint8_t>& value, int width, IJustifiedType& justifier) override
+		{
+			justifier.Format(value, width);
 		};
 
 	private:
-		int len_indicator_ = 0;
-		string format_;
+		int max_length_ = 0;
 	};
 
 }
