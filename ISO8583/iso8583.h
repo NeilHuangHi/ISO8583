@@ -34,13 +34,13 @@ namespace {
 		// have no bitmap bit, so only fields 1..64 go through the bitmap.
 		void GetDataElement(int field_no, vector<uint8_t>& data)
 		{
-			if (field_no <= kBITMAP || GetBitmapPos(field_no) == true)
+			if (IsHeaderField(field_no) || GetBitmapPos(field_no) == true)
 				data = fields_[field_no]->GetBytes();
 		};
 
 		void GetDataElement(int field_no, string& data)
 		{
-			if (field_no <= kBITMAP || GetBitmapPos(field_no) == true)
+			if (IsHeaderField(field_no) || GetBitmapPos(field_no) == true)
 				data = fields_[field_no]->GetString();
 		};
 
@@ -113,6 +113,15 @@ namespace {
 	private:
 		vector<uint8_t> data_;
 		map<int, shared_ptr<IField>> fields_;
+
+		// Exactly the ids defined by the header: kTPDU, kMSG, kBITMAP. A bare
+		// "<= kBITMAP" would send unknown negative ids into fields_[] and
+		// null-deref; keeping the range tight lets them fail in GetBitmapPos
+		// with a catchable out_of_range instead.
+		bool IsHeaderField(int field_no)
+		{
+			return field_no >= kTPDU && field_no <= kBITMAP;
+		}
 
 		bool GetBitmapPos(int position)
 		{

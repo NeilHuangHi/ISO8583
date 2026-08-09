@@ -79,6 +79,19 @@ int main()
 		reject_threw = true;
 	}
 
+	// An id below kTPDU is not a header field; it must fail with a catchable
+	// exception, not default-insert a null field and dereference it.
+	bool invalid_id_threw = false;
+	try
+	{
+		string ignored;
+		iso8583.GetDataElement(-3, ignored);
+	}
+	catch (const std::out_of_range&)
+	{
+		invalid_id_threw = true;
+	}
+
 	vector<uint8_t> packed = iso8583.ToMsg();
 
 	// Round-trip: a fresh instance must parse the message we just built.
@@ -114,6 +127,9 @@ int main()
 
 	Check(!reject_threw && !reject_result,
 		"rejected header value fails cleanly instead of throwing");
+
+	Check(invalid_id_threw,
+		"unknown negative field id fails with out_of_range, not a crash");
 
 	Check(unpacked, "Unpack accepts the message built from scratch");
 	Check(r_tpdu == "60001" && r_mti == "0200",
