@@ -1,6 +1,7 @@
 // Round-trip regression tests: Unpack followed by ToMsg must reproduce the
 // original wire bytes, and ToMsg must be repeatable.
 #include "test_message.h"
+#include "test_util.h"
 #include "../ISO8583/iso8583.h"
 #include "../ISO8583/iso8583_defs_1987.h"
 
@@ -15,8 +16,6 @@ using namespace std;
 
 namespace {
 
-	int g_failures = 0;
-
 	string ToHex(const vector<uint8_t>& data)
 	{
 		ostringstream out;
@@ -24,12 +23,6 @@ namespace {
 		for (uint8_t b : data)
 			out << setw(2) << (int)b << ' ';
 		return out.str();
-	}
-
-	void Check(bool passed, const string& what)
-	{
-		cout << (passed ? "[ PASS ] " : "[ FAIL ] ") << what << endl;
-		if (!passed) g_failures++;
 	}
 
 	void CheckBytesEqual(const vector<uint8_t>& actual, const vector<uint8_t>& expected, const string& what)
@@ -57,21 +50,11 @@ namespace {
 		}
 	}
 
-	// Strips the 2-byte little-endian length prefix that ISO8583::ToMsg prepends.
-	vector<uint8_t> BodyOf(const vector<uint8_t>& packed)
-	{
-		if (packed.size() < 2) return {};
-		return vector<uint8_t>(packed.begin() + 2, packed.end());
-	}
-
 } // namespace
 
 int main()
 {
-	// The library logs to cout on every field operation; silence it so the test
-	// results stay readable.
-	streambuf* saved = cout.rdbuf();
-	cout.rdbuf(nullptr);
+	CoutSilencer silencer;
 
 	const vector<uint8_t>& message = TestMessage();
 	const vector<uint8_t> expected_body(message.begin(), message.end() - 1);
@@ -86,7 +69,7 @@ int main()
 	string bitmap;
 	iso8583.GetDataElement(0, bitmap);
 
-	cout.rdbuf(saved);
+	silencer.Restore();
 
 	cout << "--- ISO8583 round-trip ---" << endl;
 
@@ -111,6 +94,5 @@ int main()
 	// into the stored field value, so a second pack prefixed it twice.
 	CheckBytesEqual(second, first, "ToMsg is idempotent across repeated calls");
 
-	cout << "--- " << (g_failures == 0 ? "all checks passed" : to_string(g_failures) + " check(s) failed") << " ---" << endl;
-	return g_failures == 0 ? 0 : 1;
+	return Summary();
 }

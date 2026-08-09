@@ -63,8 +63,14 @@ namespace
             value_ = value;
             length_indicator_ = data_type->UnitsForBytes((int)value_.size());
 
+            // Log through cout (not printf) so callers that redirect the
+            // stream, like the tests, actually silence this dump.
+            char hex_byte[4];
             for (auto i : value_)
-                printf("%02x ", i);
+            {
+                snprintf(hex_byte, sizeof(hex_byte), "%02x ", i);
+                cout << hex_byte;
+            }
             cout << endl;
             return true;
         }

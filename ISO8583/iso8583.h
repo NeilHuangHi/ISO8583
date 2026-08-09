@@ -9,6 +9,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 #include <string>
 namespace {
@@ -30,29 +31,39 @@ namespace {
 			fields_ = iso8583_defs->GetISO8583FieldTemplate();
 		}
 
+		// Header fields (TPDU/MTI/bitmap, field_no <= 0) are always present and
+		// have no bitmap bit, so only fields 1..64 go through the bitmap.
 		void GetDataElement(int field_no, vector<uint8_t>& data)
 		{
-			if (field_no == kBITMAP || GetBitmapPos(field_no) == true)
-				data = fields_[field_no]->GetBytes();
+			auto& field = FieldAt(field_no);
+			if (IsHeaderField(field_no) || GetBitmapPos(field_no) == true)
+				data = field->GetBytes();
 		};
 
-		void GetDataElement(int field_no, string& data) 
+		void GetDataElement(int field_no, string& data)
 		{
-			if (field_no == kBITMAP || GetBitmapPos(field_no) == true)
-				data = fields_[field_no]->GetString();
+			auto& field = FieldAt(field_no);
+			if (IsHeaderField(field_no) || GetBitmapPos(field_no) == true)
+				data = field->GetString();
 		};
 
-		bool SetDataElement(int field_no, string data) 
+		bool SetDataElement(int field_no, string data)
 		{
-			if (fields_[field_no]->SetValue(data))
+			// The bitmap is bookkeeping owned by SetBitmapPos; a direct write
+			// could leave it advertising fields that carry no data.
+			if (field_no == kBITMAP)
+				throw out_of_range("ISO8583: the bitmap cannot be set directly");
+
+			// A rejected value must not disturb the bitmap: the field keeps
+			// whatever value (and presence bit) it had before the call.
+			bool ok = FieldAt(field_no)->SetValue(data);
+			if (ok)
 			{
 				cout << "SetDataElement[" << field_no << "]" << endl;
-				SetBitmapPos(field_no, true);
-				return true;
+				if (!IsHeaderField(field_no))
+					SetBitmapPos(field_no, true);
 			}
-			else
-				SetBitmapPos(field_no, false);
-			return false; 
+			return ok;
 		};
 
 		TPDU tpdu;
@@ -110,6 +121,23 @@ namespace {
 	private:
 		vector<uint8_t> data_;
 		map<int, shared_ptr<IField>> fields_;
+
+		// Exactly the ids defined by the header: kTPDU, kMSG, kBITMAP.
+		bool IsHeaderField(int field_no)
+		{
+			return field_no >= kTPDU && field_no <= kBITMAP;
+		}
+
+		// Every valid id (header or data field) exists in the template, so
+		// unknown ids fail here with a catchable out_of_range. Going through
+		// fields_[] instead would default-insert a null field and null-deref.
+		shared_ptr<IField>& FieldAt(int field_no)
+		{
+			auto it = fields_.find(field_no);
+			if (it == fields_.end() || it->second == nullptr)
+				throw out_of_range("ISO8583: unknown field id " + to_string(field_no));
+			return it->second;
+		}
 
 		bool GetBitmapPos(int position)
 		{
