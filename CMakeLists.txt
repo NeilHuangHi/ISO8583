@@ -30,3 +30,13 @@ else()
 endif()
 
 add_test(NAME round_trip COMMAND round_trip_test)
+
+add_executable(build_message_test tests/build_message_test.cpp)
+target_link_libraries(build_message_test PRIVATE iso8583)
+if(MSVC)
+    target_compile_options(build_message_test PRIVATE /W3 /utf-8)
+else()
+    target_compile_options(build_message_test PRIVATE -Wall)
+endif()
+
+add_test(NAME build_message COMMAND build_message_test)

@@ -30,29 +30,32 @@ namespace {
 			fields_ = iso8583_defs->GetISO8583FieldTemplate();
 		}
 
+		// Header fields (TPDU/MTI/bitmap, field_no <= 0) are always present and
+		// have no bitmap bit, so only fields 1..64 go through the bitmap.
 		void GetDataElement(int field_no, vector<uint8_t>& data)
 		{
-			if (field_no == kBITMAP || GetBitmapPos(field_no) == true)
+			if (field_no <= kBITMAP || GetBitmapPos(field_no) == true)
 				data = fields_[field_no]->GetBytes();
 		};
 
-		void GetDataElement(int field_no, string& data) 
+		void GetDataElement(int field_no, string& data)
 		{
-			if (field_no == kBITMAP || GetBitmapPos(field_no) == true)
+			if (field_no <= kBITMAP || GetBitmapPos(field_no) == true)
 				data = fields_[field_no]->GetString();
 		};
 
-		bool SetDataElement(int field_no, string data) 
+		bool SetDataElement(int field_no, string data)
 		{
 			if (fields_[field_no]->SetValue(data))
 			{
 				cout << "SetDataElement[" << field_no << "]" << endl;
-				SetBitmapPos(field_no, true);
+				if (field_no > kBITMAP)
+					SetBitmapPos(field_no, true);
 				return true;
 			}
-			else
+			else if (field_no > kBITMAP)
 				SetBitmapPos(field_no, false);
-			return false; 
+			return false;
 		};
 
 		TPDU tpdu;
