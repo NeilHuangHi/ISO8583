@@ -3,7 +3,6 @@
 #include "i_iso8583_defs.h"
 #include "i_field.h"
 #include "field.h"
-#include "bitmap.h"
 #include "../FieldDescriptor/field_descriptor.h"
 #include "../LengthType/variable_length_type.h"
 #include "../LengthType/fixed_length_type.h"

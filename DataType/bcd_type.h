@@ -1,6 +1,6 @@
 #pragma once
 #include "i_data_type.h"
-#include <boost/algorithm/hex.hpp>
+#include "../UTIL/hex.h"
 
 
 namespace 
@@ -18,7 +18,7 @@ namespace
 
 			try
 			{
-				boost::algorithm::unhex(value, std::back_inserter(ret));
+				ret = Hex::Decode(value);
 			}
 			catch (...)
 			{
@@ -33,7 +33,7 @@ namespace
 			string ret;
 			try
 			{
-				boost::algorithm::hex(data, back_inserter(ret));
+				ret = Hex::Encode(data);
 			}
 			catch (...)
 			{

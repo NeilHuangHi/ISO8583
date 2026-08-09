@@ -2,13 +2,13 @@
 #include "i_iso8583_defs.h"
 #include "tpdu.h"
 #include "msg_type.h"
-#include "bitmap.h"
 #include "i_field.h"
 #include "field.h"
 #include "../FieldDescriptor/i_field_descriptor.h"
-#include <arpa/inet.h>
+#include "../UTIL/byte_order.h"
 #include <iostream>
 #include <map>
+#include <memory>
 #include <vector>
 #include <string>
 namespace {
@@ -81,8 +81,8 @@ namespace {
 
 			short data_len = data_.size();
 			cout << "data_len [" << data_len << "]" << endl;
-			data_len = htole16(data_len);
-			data_.insert(begin(data_), (uint8_t*)&data_len, (uint8_t*)&data_len + 2);
+			vector<uint8_t> len_prefix = ToLittleEndian16((uint16_t)data_len);
+			data_.insert(begin(data_), begin(len_prefix), end(len_prefix));
 			return data_;
 		}
 

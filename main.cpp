@@ -3,7 +3,6 @@
 #include "ISO8583/i_iso8583_defs.h"
 #include <string>
 #include <iostream>
-#include <boost/algorithm/hex.hpp>
 
 using namespace std;
 int main() 
